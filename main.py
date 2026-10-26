@@ -1,3 +1,4 @@
+import os
 import csv
 import sqlite3
 
@@ -36,50 +37,53 @@ cursor.execute(
 connection.commit()
 
 if choice == "1":
-    cursor.execute(
-        "SELECT filename FROM imported_files WHERE filename = ?",
-        ("sales.csv",)
-    )
-
-    if cursor.fetchone():
-        print("sales.csv has already been imported.")
-
+    if not os.path.exists("sales.csv"):
+        print("Error: sales.csv was not found.")
     else:
-        try:
-            with open("sales.csv", "r", newline="") as file:
-                reader = csv.DictReader(file)
+        cursor.execute(
+            "SELECT filename FROM imported_files WHERE filename = ?",
+            ("sales.csv",)
+        )
 
-                for row in reader:
-                    quantity = int(row["quantity"])
-                    price = int(row["unit_price"])
+        if cursor.fetchone():
+            print("sales.csv has already been imported.")
 
-                    cursor.execute("""
-                        INSERT INTO sales(date, product, category, quantity, unit_price)
-                        VALUES(?, ?, ?, ?, ?)""",
-                        (row["date"], 
-                        row["product"], 
-                        row["category"], 
-                        quantity, 
-                        price
+        else:
+            try:
+                with open("sales.csv", "r", newline="") as file:
+                    reader = csv.DictReader(file)
+
+                    for row in reader:
+                        quantity = int(row["quantity"])
+                        price = int(row["unit_price"])
+
+                        cursor.execute("""
+                            INSERT INTO sales(date, product, category, quantity, unit_price)
+                            VALUES(?, ?, ?, ?, ?)""",
+                            (row["date"], 
+                            row["product"], 
+                            row["category"], 
+                            quantity, 
+                            price
+                            )
                         )
-                    )
-                
-                    # #total = quantity * price
-                    # print(f"{row['product']} : {total}")
-            cursor.execute(
-                "INSERT INTO imported_files (filename) VALUES (?)",
-                ("sales.csv",)
-            )
-            connection.commit()
-            print("CSV imported successfully.")
+                    
+                        # #total = quantity * price
+                        # print(f"{row['product']} : {total}")
+                cursor.execute(
+                    "INSERT INTO imported_files (filename) VALUES (?)",
+                    ("sales.csv",)
+                )
+                connection.commit()
+                print("CSV imported successfully.")
 
-        except FileNotFoundError:
-            connection.rollback()
-            print("Error : sales.csv was not found.")
+            except FileNotFoundError:
+                connection.rollback()
+                print("Error : sales.csv was not found.")
 
-        except ValueError:
-            connection.rollback()
-            print("Error : quantity and unit_price must be valid numbers.")
+            except ValueError:
+                connection.rollback()
+                print("Error : quantity and unit_price must be valid numbers.")
             
 elif choice == "2":
 
